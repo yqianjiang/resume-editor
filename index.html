@@ -89,6 +89,24 @@
             margin-bottom: 2rem;
         }
 
+        /* PDF 分页优化：尽量避免条目与段落被拆页 */
+        .pdf-avoid-break,
+        .pdf-item,
+        .pdf-item li,
+        .pdf-item p,
+        .pdf-item h1,
+        .pdf-item h2,
+        .pdf-item h3 {
+            break-inside: avoid;
+            break-inside: avoid-page;
+            page-break-inside: avoid;
+        }
+
+        .pdf-section {
+            break-inside: auto;
+            page-break-inside: auto;
+        }
+
         /* 移除原有的装饰 */
         .section-title::after { display: none; }
 
@@ -203,7 +221,7 @@
         <div id="resume-view" class="w-full max-w-4xl mx-auto p-4">
             <div id="resume-content" class="resume-container mx-auto bg-white shadow-2xl">
                 <!-- 参考图片的头部样式 -->
-                <header class="resume-header">
+                <header class="resume-header pdf-avoid-break">
                     <h1 contenteditable="true" data-key="basic.name" class="editable text-4xl font-extrabold tracking-tight text-black outline-none mb-6">${basic.name}</h1>
                     
                     <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-600">
@@ -216,7 +234,7 @@
                 </header>
 
                 <!-- 教育背景 -->
-                <section class="mb-8 relative group">
+                <section class="mb-8 relative group pdf-section">
                     <div class="flex justify-between items-center border-b border-gray-200 pb-1 mb-3 text-sm font-bold uppercase tracking-wider text-black">
                         <span>教育背景</span>
                         <button onclick="addSectionItem('education')" class="no-print opacity-0 group-hover:opacity-100 transition text-xs text-blue-500 uppercase tracking-widest"><i class="fas fa-plus"></i> Add</button>
@@ -225,7 +243,7 @@
                 </section>
 
                 <!-- 工作经历 -->
-                <section class="mb-8 relative group">
+                <section class="mb-8 relative group pdf-section">
                     <div class="flex justify-between items-center border-b border-gray-200 pb-1 mb-3 text-sm font-bold uppercase tracking-wider text-black">
                         <span>工作经历</span>
                         <button onclick="addSectionItem('work')" class="no-print opacity-0 group-hover:opacity-100 transition text-xs text-blue-500 uppercase tracking-widest"><i class="fas fa-plus"></i> Add</button>
@@ -234,7 +252,7 @@
                 </section>
 
                 <!-- 项目经验 (参考图中可能合并或作为 Experience) -->
-                <section class="mb-8 relative group">
+                <section class="mb-8 relative group pdf-section">
                     <div class="flex justify-between items-center border-b border-gray-200 pb-1 mb-3 text-sm font-bold uppercase tracking-wider text-black">
                         <span>项目经验</span>
                         <button onclick="addSectionItem('projects')" class="no-print opacity-0 group-hover:opacity-100 transition text-xs text-blue-500 uppercase tracking-widest"><i class="fas fa-plus"></i> Add</button>
@@ -243,7 +261,7 @@
                 </section>
 
                 <!-- 专业技能 -->
-                <section class="mb-8 relative group">
+                <section class="mb-8 relative group pdf-section">
                     <div class="border-b border-gray-200 pb-1 mb-3 text-sm font-bold uppercase tracking-wider text-black">专业技能</div>
                     <div id="container-skills-text" class="leading-relaxed text-sm text-gray-800 editable outline-none" contenteditable="false">
                         <!-- 这里通过 JS 特殊渲染成逗号分隔格式 -->
@@ -251,7 +269,7 @@
                 </section>
 
                 <!-- 自我评价 (可选) -->
-                <section class="relative group">
+                <section class="relative group pdf-section">
                     <div class="border-b border-gray-200 pb-1 mb-3 text-sm font-bold uppercase tracking-wider text-black">自我评价</div>
                     <p contenteditable="true" data-key="evaluation" class="editable text-sm text-gray-700 leading-relaxed outline-none"></p>
                 </section>
@@ -329,7 +347,7 @@
 
             // 渲染教育背景
             renderList('education', 'container-education', (item, index) => `
-                <div class="group relative">
+                <div class="group relative pdf-item">
                     <div class="flex justify-between items-baseline">
                         <div class="flex items-baseline gap-2">
                             <h3 contenteditable="true" data-key="education[${index}].school" class="editable font-bold text-base text-black">${item.school}</h3>
@@ -343,7 +361,7 @@
 
             // 渲染工作经历
             renderList('work', 'container-work', (item, index) => `
-                <div class="group relative">
+                <div class="group relative pdf-item">
                     <div class="flex justify-between items-baseline mb-1">
                         <div class="flex items-baseline gap-2">
                             <h3 contenteditable="true" data-key="work[${index}].company" class="editable font-bold text-base text-black">${item.company}</h3>
@@ -374,7 +392,7 @@
 
             // 渲染项目经验
             renderList('projects', 'container-projects', (item, index) => `
-                <div class="group relative">
+                <div class="group relative pdf-item">
                     <div class="flex justify-between items-baseline mb-0.5">
                         <h3 contenteditable="true" data-key="projects[${index}].name" class="editable font-bold text-base text-black">${item.name}</h3>
                         <span contenteditable="true" data-key="projects[${index}].date" class="editable text-sm text-gray-500">${item.date}</span>
@@ -801,6 +819,10 @@
                 margin: 0,
                 filename: `简历_${resumeData.basic.name || '未命名'}.pdf`,
                 image: { type: 'jpeg', quality: 1 },
+                pagebreak: {
+                    mode: ['css', 'legacy'],
+                    avoid: ['.pdf-avoid-break', '.pdf-item', '.pdf-item li', '.pdf-item p', 'h1', 'h2', 'h3']
+                },
                 html2canvas: { 
                     scale: 2, 
                     useCORS: true,
