@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1a1a1a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/235/235252.png">
+    <link rel="manifest" href="manifest.json">
+    <title>智能简历编辑器</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- html2pdf for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'resume-black': '#1a1a1a',
+                        'resume-gray': '#4a4a4a',
+                        'resume-light': '#6b7280',
+                        'resume-border': '#e5e5e5',
+                        'resume-bg': '#fafafa'
+                    },
+                    fontFamily: {
+                        'sans': ['Inter', 'system-ui', '-apple-system', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* PWA & Basic Setup */
+        html, body { scroll-behavior: smooth; }
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Print & PDF Styles */
+        @media print {
+            body { background: white !important; }
+            .no-print { display: none !important; }
+            .resume-container { box-shadow: none !important; margin: 0 !important; width: 100% !important; }
+        }
+        
+        /* Resume Layout */
+        .resume-container {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 20mm;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            position: relative;
+            box-sizing: border-box;
+            transition: transform 0.3s ease;
+        }
+        
+        @media (max-width: 850px) {
+            #resume-view {
+                padding: 10px;
+                width: 100vw;
+                overflow-x: hidden;
+            }
+            .resume-container {
+                /* 仅在预览模式下缩放显示 */
+                transform: scale(calc((100vw - 40px) / 210mm));
+                transform-origin: top center;
+                margin-left: auto;
+                margin-right: auto;
+                /* 解决缩放导致的底部留白过大问题 */
+                margin-bottom: calc(297mm * (calc((100vw - 40px) / 210mm) - 1) + 20px);
+            }
+        }
+
+        /* Editing UI Styles */
+        .editable:hover { outline: 1px dashed #3b82f6; cursor: text; }
+        .editable:focus { outline: 2px solid #3b82f6; background: rgba(59, 130, 246, 0.05); }
+        
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0;
+            width: 100%; height: 2px;
+            background: linear-gradient(90deg, #1a1a1a 0%, #e5e5e5 100%);
+        }
+
+        /* 移动端增强按钮可见性 */
+        @media (max-width: 768px) {
+            .no-print.opacity-0 {
+                opacity: 1 !important;
+            }
+        }
+
+        /* Mobile Form Editor Styles */
+        .form-input {
+            @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-sm;
+        }
+        
+        .mobile-editor {
+            display: none;
+        }
+        
+        @media (max-width: 768px) {
+            #resume-view { display: none; }
+            #mobile-editor { display: block; padding-bottom: 80px; }
+            .desktop-toolbar { display: none !important; }
+            
+            /* 修正移动端 A4 容器在预览模式下的展示 */
+            #resume-view.active-mobile-preview {
+                display: block !important;
+                background: #f3f4f6;
+                position: fixed;
+                inset: 56px 0 0 0;
+                z-index: 40;
+                overflow-y: auto;
+                padding: 20px 10px;
+            }
+        }
+        
+        /* Animations */
+        .fade-in { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-gray-200 min-h-screen">
+
+    <!-- 顶部工具栏 -->
+    <header class="no-print fixed top-0 left-0 right-0 bg-white shadow-md z-50 print:hidden">
+        <div class="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-file-alt text-resume-black text-xl"></i>
+                <span class="font-bold text-resume-black hidden sm:inline">简历编辑器</span>
+            </div>
+            
+            <!-- 桌面端操作按钮 -->
+            <div class="desktop-toolbar hidden md:flex items-center gap-2">
+                <button onclick="exportJSON()" title="导出JSON" class="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded transition flex items-center gap-1">
+                    <i class="fas fa-file-export"></i> 导出
+                </button>
+                <label class="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded transition cursor-pointer flex items-center gap-1">
+                    <i class="fas fa-file-import"></i> 导入
+                    <input type="file" accept=".json" onchange="importJSON(event)" class="hidden">
+                </label>
+                <button onclick="generatePDF()" class="bg-resume-black text-white px-4 py-1.5 rounded text-sm hover:bg-gray-800 transition flex items-center gap-2">
+                    <i class="fas fa-download"></i> 下载 PDF
+                </button>
+            </div>
+
+            <!-- 移动端切换按钮 -->
+            <div class="flex md:hidden items-center gap-2">
+                <button onclick="toggleMobileView('edit')" id="btn-edit" class="px-3 py-1.5 text-xs font-medium rounded bg-gray-800 text-white">编辑</button>
+                <button onclick="toggleMobileView('preview')" id="btn-preview" class="px-3 py-1.5 text-xs font-medium rounded bg-gray-200 text-gray-700">预览</button>
+                <button onclick="showMobileMenu()" class="p-2 text-gray-700"><i class="fas fa-ellipsis-v"></i></button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 移动端底部菜单 -->
+    <div id="mobile-menu" class="no-print fixed inset-0 bg-black bg-opacity-50 z-50 hidden print:hidden">
+        <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl p-4 space-y-3">
+            <button onclick="generatePDF(); showMobileMenu();" class="w-full py-3 bg-resume-black text-white rounded-lg font-medium flex items-center justify-center gap-2">
+                <i class="fas fa-file-pdf"></i> 下载 PDF
+            </button>
+            <button onclick="exportJSON(); showMobileMenu();" class="w-full py-3 bg-gray-100 text-gray-700 rounded-lg font-medium flex items-center justify-center gap-2">
+                <i class="fas fa-file-export"></i> 导出 JSON
+            </button>
+            <label class="w-full py-3 bg-gray-100 text-gray-700 rounded-lg font-medium flex items-center justify-center gap-2 cursor-pointer">
+                <i class="fas fa-file-import"></i> 导入 JSON
+                <input type="file" accept=".json" onchange="importJSON(event); showMobileMenu();" class="hidden">
+            </label>
+            <button onclick="showMobileMenu()" class="w-full py-3 text-gray-500 font-medium">取消</button>
+        </div>
+    </div>
+
+    <!-- 主内容区域 -->
+    <main class="pt-16 pb-8 flex justify-center">
+        
+        <!-- 1. 桌面端：简历预览与直接编辑 -->
+        <div id="resume-view" class="w-full max-w-4xl mx-auto p-4">
+            <div id="resume-content" class="resume-container mx-auto bg-white shadow-2xl p-10">
+                <!-- 头部 -->
+                <header class="border-b border-resume-border pb-4 mb-6 relative group">
+                    <div class="flex justify-between items-start">
+                        <div class="w-2/3">
+                            <h1 contenteditable="true" data-key="basic.name" class="editable text-4xl font-bold text-resume-black outline-none">${basic.name}</h1>
+                            <p contenteditable="true" data-key="basic.title" class="editable text-lg text-resume-gray mt-2 outline-none">${basic.title}</p>
+                        </div>
+                        <div class="w-1/3 text-right text-sm text-resume-light space-y-1">
+                            <div class="flex items-center justify-end gap-2">
+                                <i class="fas fa-phone w-4"></i>
+                                <span contenteditable="true" data-key="basic.phone" class="editable outline-none">${basic.phone}</span>
+                            </div>
+                            <div class="flex items-center justify-end gap-2">
+                                <i class="fas fa-envelope w-4"></i>
+                                <span contenteditable="true" data-key="basic.email" class="editable outline-none">${basic.email}</span>
+                            </div>
+                            <div class="flex items-center justify-end gap-2">
+                                <i class="fas fa-location-dot w-4"></i>
+                                <span contenteditable="true" data-key="basic.location" class="editable outline-none">${basic.location}</span>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
+                <!-- 教育背景 -->
+                <section class="mb-6 relative group">
+                    <div class="flex justify-between items-center mb-2">
+                        <h2 class="section-title text-lg font-bold text-resume-black">教育背景</h2>
+                        <button onclick="addSectionItem('education')" class="no-print opacity-0 group-hover:opacity-100 transition text-xs text-blue-500 hover:text-blue-700"><i class="fas fa-plus"></i> 添加</button>
+                    </div>
+                    <div id="container-education" class="space-y-2"></div>
+                </section>
+
+                <!-- 工作经历 -->
+                <section class="mb-6 relative group">
+                    <div class="flex justify-between items-center mb-2">
+                        <h2 class="section-title text-lg font-bold text-resume-black">工作经历</h2>
+                        <button onclick="addSectionItem('work')" class="no-print opacity-0 group-hover:opacity-100 transition text-xs text-blue-500 hover:text-blue-700"><i class="fas fa-plus"></i> 添加</button>
+                    </div>
+                    <div id="container-work" class="space-y-4"></div>
+                </section>
+
+                <!-- 项目经验 -->
+                <section class="mb-6 relative group">
+                    <div class="flex justify-between items-center mb-2">
+                        <h2 class="section-title text-lg font-bold text-resume-black">项目经验</h2>
+                        <button onclick="addSectionItem('projects')" class="no-print opacity-0 group-hover:opacity-100 transition text-xs text-blue-500 hover:text-blue-700"><i class="fas fa-plus"></i> 添加</button>
+                    </div>
+                    <div id="container-projects" class="space-y-4"></div>
+                </section>
+
+                <!-- 专业技能 -->
+                <section class="mb-6 relative group">
+                    <h2 class="section-title text-lg font-bold text-resume-black mb-4">专业技能</h2>
+                    <div id="container-skills" class="grid grid-cols-2 gap-x-8 gap-y-2"></div>
+                </section>
+
+                <!-- 自我评价 -->
+                <section class="relative group">
+                    <h2 class="section-title text-lg font-bold text-resume-black mb-4">自我评价</h2>
+                    <p contenteditable="true" data-key="evaluation" class="editable text-sm text-resume-gray leading-relaxed outline-none"></p>
+                </section>
+            </div>
+        </div>
+
+        <!-- 2. 移动端：表单编辑界面 -->
+        <div id="mobile-editor" class="mobile-editor w-full max-w-lg mx-auto p-4 bg-white min-h-screen shadow-lg">
+            <div class="space-y-6 divide-y divide-gray-100">
+                
+                <!-- 基本信息表单 -->
+                <div class="space-y-3 pt-2">
+                    <h3 class="font-bold text-resume-black flex items-center gap-2"><i class="fas fa-user text-gray-400"></i> 基本信息</h3>
+                    <input type="text" data-key="basic.name" placeholder="姓名" class="form-input">
+                    <input type="text" data-key="basic.title" placeholder="职位头衔" class="form-input">
+                    <input type="tel" data-key="basic.phone" placeholder="电话" class="form-input">
+                    <input type="email" data-key="basic.email" placeholder="邮箱" class="form-input">
+                    <input type="text" data-key="basic.location" placeholder="居住地" class="form-input">
+                </div>
+
+                <!-- 动态列表区域 (由JS渲染) -->
+                <div id="mobile-form-sections" class="space-y-6"></div>
+
+                <!-- 自我评价 -->
+                <div class="space-y-3 pt-4">
+                    <h3 class="font-bold text-resume-black flex items-center gap-2"><i class="fas fa-comment text-gray-400"></i> 自我评价</h3>
+                    <textarea data-key="evaluation" rows="4" placeholder="写一段自我介绍..." class="form-input"></textarea>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- PWA Service Worker Registration -->
+    <script>
+        // 1. 默认数据结构
+        const defaultData = {
+            basic: { name: "张 明", title: "前端开发工程师 · 5年经验", phone: "138-0000-0000", email: "zhangming@email.com", location: "北京市朝阳区" },
+            education: [
+                { school: "北京理工大学", major: "计算机科学与技术 · 本科", date: "2015.09 - 2019.06" }
+            ],
+            work: [
+                { role: "高级前端开发工程师", company: "北京某某科技有限公司", date: "2021.06 - 至今", details: ["负责公司核心 SaaS 产品前端架构设计与开发", "主导前端工程化建设，搭建 CI/CD 流程"] },
+                { role: "前端开发工程师", company: "北京某某互联网公司", date: "2019.07 - 2021.05", details: ["负责电商平台前端开发", "优化首屏加载速度"] }
+            ],
+            projects: [
+                { name: "企业级数据可视化平台", tech: "Vue3 + TypeScript", date: "2022.03 - 2022.12", details: ["独立负责前端架构设计", "实现大数据量表格虚拟滚动"] }
+            ],
+            skills: [
+                { name: "Vue.js / Vue3", level: 95 }, { name: "React / Hooks", level: 90 }, { name: "TypeScript", level: 85 }, { name: "Node.js", level: 80 }
+            ],
+            evaluation: "5年前端开发经验，熟练掌握 Vue.js / React 生态系统，具备完整的前端工程化思维。擅长组件化开发、性能优化和跨端解决方案。"
+        };
+
+        // 2. 状态管理
+        let resumeData = JSON.parse(localStorage.getItem('resumeData')) || defaultData;
+
+        // 3. 保存数据
+        function saveData() {
+            localStorage.setItem('resumeData', JSON.stringify(resumeData));
+            console.log('Data saved');
+        }
+
+        // 4. 渲染桌面端简历
+        function renderDesktop() {
+            // 渲染头部
+            document.querySelectorAll('[data-key^="basic."]').forEach(el => {
+                const key = el.dataset.key.split('.')[1];
+                if (resumeData.basic[key]) el.innerText = resumeData.basic[key];
+            });
+
+            // 渲染列表项
+            renderList('education', 'container-education', (item, index) => `
+                <div class="flex justify-between items-start group relative">
+                    <div class="w-full">
+                        <div class="flex justify-between">
+                            <h3 contenteditable="true" data-key="education[${index}].school" class="editable font-semibold text-resume-black">${item.school}</h3>
+                            <span contenteditable="true" data-key="education[${index}].date" class="editable text-sm text-resume-light">${item.date}</span>
+                        </div>
+                        <p contenteditable="true" data-key="education[${index}].major" class="editable text-sm text-resume-gray">${item.major}</p>
+                    </div>
+                    <button onclick="removeItem('education', ${index})" class="no-print absolute -right-6 top-1 opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 text-xs"><i class="fas fa-times"></i></button>
+                </div>
+            `);
+
+            renderList('work', 'container-work', (item, index) => `
+                <div class="relative pl-6 group">
+                    <div class="timeline-line"></div>
+                    <div class="timeline-dot"></div>
+                    <div class="flex justify-between items-start mb-1">
+                        <div>
+                            <h3 contenteditable="true" data-key="work[${index}].role" class="editable font-semibold text-resume-black">${item.role}</h3>
+                            <p contenteditable="true" data-key="work[${index}].company" class="editable text-sm text-resume-gray">${item.company}</p>
+                        </div>
+                        <span contenteditable="true" data-key="work[${index}].date" class="editable text-sm text-resume-light whitespace-nowrap">${item.date}</span>
+                    </div>
+                    <ul class="text-sm text-resume-gray space-y-1">
+                        ${(item.details || []).map((d, i) => `
+                            <li class="flex gap-2 items-start">
+                                <span class="text-resume-black mt-1">•</span>
+                                <span contenteditable="true" data-key="work[${index}].details[${i}]" class="editable flex-1">${d}</span>
+                            </li>
+                        `).join('')}
+                    </ul>
+                    <button onclick="removeItem('work', ${index})" class="no-print absolute -right-6 top-1 opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 text-xs"><i class="fas fa-times"></i></button>
+                </div>
+            `);
+
+            renderList('projects', 'container-projects', (item, index) => `
+                <div class="group relative">
+                    <div class="flex justify-between items-start mb-1">
+                        <h3 contenteditable="true" data-key="projects[${index}].name" class="editable font-semibold text-resume-black">${item.name}</h3>
+                        <span contenteditable="true" data-key="projects[${index}].date" class="editable text-xs text-resume-light">${item.date}</span>
+                    </div>
+                    <p class="text-sm text-resume-gray mb-1">技术栈：<span contenteditable="true" data-key="projects[${index}].tech" class="editable font-medium text-resume-black">${item.tech}</span></p>
+                    <ul class="text-sm text-resume-gray space-y-1">
+                        ${(item.details || []).map((d, i) => `
+                            <li class="flex gap-2 items-start">
+                                <span class="text-resume-black mt-0.5">•</span>
+                                <span contenteditable="true" data-key="projects[${index}].details[${i}]" class="editable flex-1">${d}</span>
+                            </li>
+                        `).join('')}
+                    </ul>
+                    <button onclick="removeItem('projects', ${index})" class="no-print absolute -right-6 top-1 opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 text-xs"><i class="fas fa-times"></i></button>
+                </div>
+            `);
+
+            // 技能
+            const skillContainer = document.getElementById('container-skills');
+            skillContainer.innerHTML = resumeData.skills.map((item, index) => `
+                <div class="group relative">
+                    <div class="flex justify-between items-center mb-1">
+                        <span contenteditable="true" data-key="skills[${index}].name" class="editable text-sm font-medium text-resume-gray">${item.name}</span>
+                    </div>
+                    <div class="skill-bar"><div class="skill-progress" style="width: ${item.level}%"></div></div>
+                    <button onclick="removeItem('skills', ${index})" class="no-print absolute -right-4 top-0 opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 text-xs"><i class="fas fa-times"></i></button>
+                </div>
+            `).join('');
+
+            // 自我评价
+            const evalEl = document.querySelector('[data-key="evaluation"]');
+            if(evalEl) evalEl.innerText = resumeData.evaluation;
+        }
+
+        // 辅助：渲染列表
+        function renderList(key, containerId, templateFn) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            container.innerHTML = resumeData[key].map(templateFn).join('');
+        }
+
+        // 5. 渲染移动端表单
+        function renderMobileForms() {
+            const container = document.getElementById('mobile-form-sections');
+            
+            // 教育经历表单
+            const eduForms = resumeData.education.map((item, i) => createMobileCard('教育经历', [
+                { key: `education[${i}].school`, placeholder: '学校', val: item.school },
+                { key: `education[${i}].major`, placeholder: '专业/学历', val: item.major },
+                { key: `education[${i}].date`, placeholder: '时间', val: item.date }
+            ], i, 'education'));
+
+            // 工作经历表单
+            const workForms = resumeData.work.map((item, i) => createMobileCard('工作经历', [
+                { key: `work[${i}].role`, placeholder: '职位', val: item.role },
+                { key: `work[${i}].company`, placeholder: '公司', val: item.company },
+                { key: `work[${i}].date`, placeholder: '时间', val: item.date },
+                { key: `work[${i}].details`, placeholder: '工作内容(换行分隔)', val: item.details.join('\n'), isTextarea: true }
+            ], i, 'work'));
+
+            // 项目经历表单
+            const projForms = resumeData.projects.map((item, i) => createMobileCard('项目经历', [
+                { key: `projects[${i}].name`, placeholder: '项目名称', val: item.name },
+                { key: `projects[${i}].tech`, placeholder: '技术栈', val: item.tech },
+                { key: `projects[${i}].date`, placeholder: '时间', val: item.date },
+                { key: `projects[${i}].details`, placeholder: '项目详情(换行分隔)', val: item.details.join('\n'), isTextarea: true }
+            ], i, 'projects'));
+
+            // 技能表单 (增加进度编辑)
+            const skillForms = `
+                <div class="space-y-3 pt-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="font-bold text-resume-black flex items-center gap-2"><i class="fas fa-tools text-gray-400"></i> 专业技能</h3>
+                        <button onclick="addSectionItem('skills')" class="text-xs text-blue-500 border border-blue-500 px-2 py-1 rounded">添加技能</button>
+                    </div>
+                    ${resumeData.skills.map((item, i) => `
+                        <div class="flex flex-col gap-2 p-3 bg-gray-50 rounded-lg">
+                            <div class="flex gap-2 items-center">
+                                <input type="text" data-key="skills[${i}].name" value="${item.name}" placeholder="技能名称" class="form-input flex-1">
+                                <button onclick="removeItem('skills', ${i})" class="text-red-400 p-2"><i class="fas fa-trash"></i></button>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span class="text-xs text-gray-500 w-12">掌握度</span>
+                                <input type="range" data-key="skills[${i}].level" value="${item.level}" min="0" max="100" class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                                <span class="text-xs font-mono w-8">${item.level}%</span>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            container.innerHTML = eduForms.join('') + workForms.join('') + projForms.join('') + skillForms;
+            
+            // 绑定基本信息的值
+            document.querySelectorAll('#mobile-editor [data-key^="basic."]').forEach(el => {
+                const key = el.dataset.key.split('.')[1];
+                if (resumeData.basic[key]) el.value = resumeData.basic[key];
+            });
+            
+            // 自我评价
+            const evalEl = document.querySelector('#mobile-editor [data-key="evaluation"]');
+            if(evalEl) evalEl.value = resumeData.evaluation;
+        }
+
+        function createMobileCard(title, fields, index, type) {
+            const fieldsHtml = fields.map(f => 
+                f.isTextarea ? 
+                    `<textarea data-key="${f.key}" placeholder="${f.placeholder}" rows="3" class="form-input">${f.val}</textarea>` :
+                    `<input type="text" data-key="${f.key}" placeholder="${f.placeholder}" value="${f.val}" class="form-input">`
+            ).join('');
+
+            return `
+                <div class="space-y-3 pt-4 relative">
+                    <div class="flex justify-between items-center">
+                        <h3 class="font-bold text-resume-black">${title} ${index + 1}</h3>
+                        <button onclick="removeItem('${type}', ${index})" class="text-xs text-red-500 border border-red-100 px-2 py-1 rounded hover:bg-red-50">删除</button>
+                    </div>
+                    ${fieldsHtml}
+                </div>
+            `;
+        }
+
+        // 6. 事件处理与数据同步
+        function syncDataFromElement(el) {
+            const key = el.dataset.key;
+            if (!key) return;
+
+            // 解析路径 "work[0].details[0]"
+            const path = key.split(/[\.\[\]]+/).filter(Boolean);
+            let obj = resumeData;
+            
+            for (let i = 0; i < path.length - 1; i++) {
+                const p = isNaN(path[i]) ? path[i] : parseInt(path[i]);
+                if (!obj[p]) {
+                    // 如果路径不存在，尝试创建（如 details 数组）
+                    obj[p] = isNaN(path[i+1]) ? {} : [];
+                }
+                obj = obj[p];
+            }
+            
+            const lastKey = path[path.length - 1];
+            let value = el.value !== undefined ? el.value : el.innerText;
+
+            // 类型转换
+            if (el.type === 'range' || el.type === 'number') {
+                value = parseInt(value);
+                // 更新旁边的百分比显示
+                if (el.nextElementSibling && el.nextElementSibling.tagName === 'SPAN') {
+                    el.nextElementSibling.innerText = value + '%';
+                }
+            }
+
+            // 处理数组格式的字符串转换 (移动端textarea)
+            if (key.includes('details') && el.tagName === "TEXTAREA") {
+                obj[lastKey] = value.split('\n').filter(s => s.trim());
+            } else {
+                obj[lastKey] = value;
+            }
+            
+            saveData();
+
+            // 如果是在移动端编辑，同时也更新桌面端的背景 DOM，确保 PDF 生成时数据最新
+            if (el.closest('#mobile-editor')) {
+                const desktopEl = document.querySelector(`#resume-view [data-key="${key}"]`);
+                if (desktopEl) {
+                    if (key.includes('details')) {
+                        // 数组类型的需要重新渲染整个部分
+                        renderDesktop(); 
+                    } else if (key.includes('level')) {
+                        const progressBar = desktopEl.closest('.group').querySelector('.skill-progress');
+                        if (progressBar) progressBar.style.width = value + '%';
+                    } else {
+                        desktopEl.innerText = value;
+                    }
+                }
+            }
+        }
+
+        // 全局事件监听
+        document.addEventListener('input', (e) => {
+            if (e.target.dataset.key) {
+                syncDataFromElement(e.target);
+                // 如果在移动端编辑，更新桌面预览数据；如果在桌面编辑，更新移动端表单数据
+                // 这里简化处理：重新渲染另一端视图太耗性能，只在切换视图时重新渲染
+            }
+        });
+
+        document.addEventListener('blur', (e) => {
+            if (e.target.dataset.key) {
+                // 桌面端contenteditable失焦时保存
+                if (e.target.classList.contains('editable')) {
+                    syncDataFromElement(e.target);
+                }
+            }
+        }, true);
+
+        // 7. 操作函数
+        function addSectionItem(section) {
+            const templates = {
+                education: { school: "新学校", major: "专业", date: "时间" },
+                work: { role: "职位", company: "公司", date: "时间", details: ["工作内容"] },
+                projects: { name: "项目名称", tech: "技术栈", date: "时间", details: ["项目详情"] },
+                skills: { name: "新技能", level: 80 }
+            };
+            
+            resumeData[section].push(templates[section]);
+            saveData();
+            renderDesktop();
+            renderMobileForms();
+        }
+
+        function removeItem(section, index) {
+            if(confirm('确定要删除这一项吗？')) {
+                resumeData[section].splice(index, 1);
+                saveData();
+                renderDesktop();
+                renderMobileForms();
+            }
+        }
+
+        function toggleMobileView(view) {
+            const editBtn = document.getElementById('btn-edit');
+            const prevBtn = document.getElementById('btn-preview');
+            const editor = document.getElementById('mobile-editor');
+            const preview = document.getElementById('resume-view');
+
+            if (view === 'edit') {
+                editor.style.display = 'block';
+                preview.classList.remove('active-mobile-preview');
+                editBtn.className = 'px-3 py-1.5 text-xs font-medium rounded bg-gray-800 text-white';
+                prevBtn.className = 'px-3 py-1.5 text-xs font-medium rounded bg-gray-200 text-gray-700';
+            } else {
+                editor.style.display = 'none';
+                preview.classList.add('active-mobile-preview');
+                // 确保预览时数据同步渲染
+                renderDesktop();
+                prevBtn.className = 'px-3 py-1.5 text-xs font-medium rounded bg-gray-800 text-white';
+                editBtn.className = 'px-3 py-1.5 text-xs font-medium rounded bg-gray-200 text-gray-700';
+            }
+        }
+
+        function showMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        }
+
+        // 8. 导入导出
+        function exportJSON() {
+            const dataStr = JSON.stringify(resumeData, null, 2);
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `resume_${new Date().getTime()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    resumeData = JSON.parse(e.target.result);
+                    saveData();
+                    renderDesktop();
+                    renderMobileForms();
+                    alert('导入成功！');
+                } catch (err) {
+                    alert('导入失败：文件格式不正确');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // 9. PDF 生成
+        async function generatePDF() {
+            // 获取要下载的原始元素
+            const originalElement = document.getElementById('resume-content');
+            
+            // A4 标准尺寸 px 化 (96 DPI 下)
+            const rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
+            const a4WidthPx = 793.7; // 210mm
+            
+            // 创建一个临时的克隆容器，完全隔离环境样式
+            const tempContainer = document.createElement('div');
+            tempContainer.style.position = 'absolute';
+            tempContainer.style.left = '-9999px';
+            tempContainer.style.top = '0';
+            tempContainer.style.width = a4WidthPx + 'px';
+            tempContainer.style.background = 'white';
+            document.body.appendChild(tempContainer);
+
+            // 克隆内容
+            const clone = originalElement.cloneNode(true);
+            
+            // 关键：彻底重置克隆件的布局样式，防止其在临时容器内偏移
+            Object.assign(clone.style, {
+                transform: 'none',
+                margin: '0',
+                padding: '20mm', // 保持内部边距
+                boxShadow: 'none',
+                width: a4WidthPx + 'px',
+                minHeight: '297mm',
+                position: 'relative'
+            });
+            
+            // 确保所有的 contenteditable 为 false
+            clone.querySelectorAll('[contenteditable]').forEach(el => el.setAttribute('contenteditable', 'false'));
+            // 移除不需要打印的按钮
+            clone.querySelectorAll('.no-print').forEach(el => el.remove());
+            
+            tempContainer.appendChild(clone);
+
+            const opt = {
+                margin: 0,
+                filename: `简历_${resumeData.basic.name || '未命名'}.pdf`,
+                image: { type: 'jpeg', quality: 1 },
+                html2canvas: { 
+                    scale: 2, 
+                    useCORS: true,
+                    letterRendering: true,
+                    width: a4WidthPx,
+                    windowWidth: a4WidthPx,
+                    x: 0, // 强制从横坐标 0 开始抓取
+                    y: 0, // 强制从纵坐标 0 开始抓取
+                    scrollX: 0,
+                    scrollY: 0
+                },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            const originalBtn = event ? (event.currentTarget || event.target) : null;
+            let originalText = '';
+            if (originalBtn && originalBtn.tagName === 'BUTTON') {
+                originalText = originalBtn.innerHTML;
+                originalBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 生成中...';
+                originalBtn.disabled = true;
+            }
+
+            try {
+                // 等待一小会确保克隆件渲染完成
+                await new Promise(resolve => setTimeout(resolve, 100));
+                await html2pdf().set(opt).from(clone).save();
+            } catch (err) {
+                console.error('PDF generation failed:', err);
+                alert('PDF 生成失败，请重新尝试');
+            } finally {
+                document.body.removeChild(tempContainer);
+                if (originalBtn && originalBtn.tagName === 'BUTTON') {
+                    originalBtn.innerHTML = originalText;
+                    originalBtn.disabled = false;
+                }
+            }
+        }
+
+        // 10. PWA 初始化
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(registration => console.log('SW registered'))
+                    .catch(err => console.log('SW registration failed: ', err));
+            });
+        }
+
+        // 初始化
+        window.onload = () => {
+            renderDesktop();
+            renderMobileForms();
+            
+            // 移动端默认显示编辑视图
+            if(window.innerWidth < 768) {
+                toggleMobileView('edit');
+            }
+        };
+    </script>
+</body>
+</html>

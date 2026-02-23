@@ -1,0 +1,17 @@
+{
+  "name": "智能简历编辑器",
+  "short_name": "简历编辑",
+  "description": "移动端友好的 A4 简历编辑器",
+  "start_url": "./code.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1a1a1a",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/235/235252.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
