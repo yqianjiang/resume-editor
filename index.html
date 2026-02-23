@@ -54,7 +54,7 @@
         .resume-container {
             width: 210mm;
             min-height: 297mm;
-            padding: 20mm;
+            padding: 12mm;
             margin: 0 auto;
             background: white;
             box-shadow: 0 0 20px rgba(0,0,0,0.1);
@@ -72,7 +72,7 @@
             .resume-container {
                 /* 仅在预览模式下缩放显示 */
                 transform: scale(calc((100vw - 40px) / 210mm));
-                transform-origin: top center;
+                transform-origin: top left;
                 margin-left: auto;
                 margin-right: auto;
                 /* 解决缩放导致的底部留白过大问题 */
@@ -164,6 +164,27 @@
         .mobile-card {
             @apply bg-white rounded-xl p-4 border border-gray-200 shadow-sm relative mb-4;
         }
+
+        .details-editor {
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            line-height: 1.6;
+        }
+
+        .desktop-inline-btn {
+            font-size: 11px;
+            color: #2563eb;
+            background: #eff6ff;
+            border: 1px solid #dbeafe;
+            border-radius: 9999px;
+            padding: 2px 8px;
+            transition: all 0.2s;
+        }
+
+        .desktop-inline-btn:hover {
+            background: #dbeafe;
+        }
         
         .mobile-editor {
             display: none;
@@ -173,6 +194,7 @@
             #resume-view { display: none; }
             #mobile-editor { display: block; padding-bottom: 80px; }
             .desktop-toolbar { display: none !important; }
+            textarea { width: 100%; padding-left: 8px; }
             
             /* 修正移动端 A4 容器在预览模式下的展示 */
             #resume-view.active-mobile-preview {
@@ -246,12 +268,10 @@
         
         <!-- 1. 桌面端：简历预览与直接编辑 -->
         <div id="resume-view" class="w-full max-w-4xl mx-auto p-4">
-            <div id="resume-content" class="resume-container mx-auto bg-white shadow-2xl p-16">
+            <div id="resume-content" class="resume-container mx-auto bg-white shadow-2xl">
                 <!-- 参考图片的头部样式 -->
                 <header class="resume-header">
-                    <div class="header-decoration no-print"></div>
-                    <div class="header-decoration-print hidden print:block"></div>
-                    <h1 contenteditable="true" data-key="basic.name" class="editable text-5xl font-extrabold tracking-tight text-black outline-none mb-6">${basic.name}</h1>
+                    <h1 contenteditable="true" data-key="basic.name" class="editable text-4xl font-extrabold tracking-tight text-black outline-none mb-6">${basic.name}</h1>
                     
                     <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-600">
                         <div contenteditable="true" data-key="basic.phone" class="editable outline-none">${basic.phone}</div>
@@ -355,6 +375,10 @@
 
         // 2. 状态管理
         let resumeData = JSON.parse(localStorage.getItem('resumeData')) || defaultData;
+        let desktopDetailEditState = {
+            work: {},
+            projects: {}
+        };
 
         // 3. 保存数据
         function saveData() {
@@ -394,13 +418,23 @@
                         </div>
                         <span contenteditable="true" data-key="work[${index}].date" class="editable item-meta">${item.date}</span>
                     </div>
-                    <ul class="text-[13px] text-gray-700 space-y-1.5 ml-4 list-disc">
-                        ${(item.details || []).map((d, i) => `
-                            <li>
-                                <span contenteditable="true" data-key="work[${index}].details[${i}]" class="editable block">${d}</span>
-                            </li>
-                        `).join('')}
-                    </ul>
+                    ${desktopDetailEditState.work[index] ? `
+                        <div class="mt-2">
+                            <textarea id="desktop-details-work-${index}" data-key="work[${index}].details" data-detail-editor="true" rows="${Math.max((item.details || []).length + 1, 4)}" class="form-input details-editor w-full p-2 text-[13px] text-gray-700" placeholder="· 负责了...">${formatDetailsForTextarea(item.details || [])}</textarea>
+                            <div class="no-print mt-2">
+                                <button onclick="toggleDesktopDetailEdit('work', ${index})" class="desktop-inline-btn">完成</button>
+                            </div>
+                        </div>
+                    ` : `
+                        <ul class="text-[13px] text-gray-700 space-y-1.5 ml-4 list-disc">
+                            ${(item.details || []).map((d) => `
+                                <li>
+                                    <span class="block">${d}</span>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    `}
+                    ${desktopDetailEditState.work[index] ? '' : `<button onclick="toggleDesktopDetailEdit('work', ${index})" class="no-print absolute -right-2 top-1/2 opacity-0 group-hover:opacity-100 transition desktop-inline-btn">编辑描述</button>`}
                     <button onclick="removeItem('work', ${index})" class="no-print absolute -right-8 top-0 opacity-0 group-hover:opacity-100 text-red-300 hover:text-red-500 text-xs transition-opacity"><i class="fas fa-trash"></i></button>
                 </div>
             `);
@@ -413,13 +447,23 @@
                         <span contenteditable="true" data-key="projects[${index}].date" class="editable item-meta">${item.date}</span>
                     </div>
                     <p class="text-[12px] text-gray-500 mb-1.5 italic" contenteditable="true" data-key="projects[${index}].tech">${item.tech}</p>
-                    <ul class="text-[13px] text-gray-700 space-y-1.5 ml-4 list-disc">
-                        ${(item.details || []).map((d, i) => `
-                            <li>
-                                <span contenteditable="true" data-key="projects[${index}].details[${i}]" class="editable block">${d}</span>
-                            </li>
-                        `).join('')}
-                    </ul>
+                    ${desktopDetailEditState.projects[index] ? `
+                        <div class="mt-2">
+                            <textarea id="desktop-details-projects-${index}" data-key="projects[${index}].details" data-detail-editor="true" rows="${Math.max((item.details || []).length + 1, 4)}" class="form-input details-editor w-full p-2 text-[13px] text-gray-700" placeholder="· 实现了...">${formatDetailsForTextarea(item.details || [])}</textarea>
+                            <div class="no-print mt-2">
+                                <button onclick="toggleDesktopDetailEdit('projects', ${index})" class="desktop-inline-btn">完成</button>
+                            </div>
+                        </div>
+                    ` : `
+                        <ul class="text-[13px] text-gray-700 space-y-1.5 ml-4 list-disc">
+                            ${(item.details || []).map((d) => `
+                                <li>
+                                    <span class="block">${d}</span>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    `}
+                    ${desktopDetailEditState.projects[index] ? '' : `<button onclick="toggleDesktopDetailEdit('projects', ${index})" class="no-print absolute -right-2 top-1/2 opacity-0 group-hover:opacity-100 transition desktop-inline-btn">编辑描述</button>`}
                     <button onclick="removeItem('projects', ${index})" class="no-print absolute -right-8 top-0 opacity-0 group-hover:opacity-100 text-red-300 hover:text-red-500 text-xs transition-opacity"><i class="fas fa-trash"></i></button>
                 </div>
             `);
@@ -460,7 +504,7 @@
                 { key: `work[${i}].company`, label: '公司/组织', placeholder: '如：某某科技有限公司', val: item.company },
                 { key: `work[${i}].role`, label: '职位角色', placeholder: '如：高级前端开发', val: item.role },
                 { key: `work[${i}].date`, label: '时间范围', placeholder: '如：2022.07 - 至今', val: item.date },
-                { key: `work[${i}].details`, label: '工作描述 (每行一条)', placeholder: '负责了...', val: (item.details || []).join('\n'), isTextarea: true }
+                { key: `work[${i}].details`, label: '工作描述（回车自动新增 · ）', placeholder: '· 负责了...', val: formatDetailsForTextarea(item.details || []), isTextarea: true, detailEditor: true }
             ], i, 'work'));
 
             // 项目经历表单
@@ -469,7 +513,7 @@
                 { key: `projects[${i}].name`, label: '项目名称', placeholder: '如：智能调度系统', val: item.name },
                 { key: `projects[${i}].tech`, label: '技术栈/角色', placeholder: '如：React, Node.js', val: item.tech },
                 { key: `projects[${i}].date`, label: '时间', placeholder: '如：2023.01', val: item.date },
-                { key: `projects[${i}].details`, label: '项目详情 (每行一条)', placeholder: '实现了...', val: (item.details || []).join('\n'), isTextarea: true }
+                { key: `projects[${i}].details`, label: '项目详情（回车自动新增 · ）', placeholder: '· 实现了...', val: formatDetailsForTextarea(item.details || []), isTextarea: true, detailEditor: true }
             ], i, 'projects'));
 
             // 技能表单
@@ -523,7 +567,7 @@
                 <div class="mb-3">
                     <label class="form-label text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1 block">${f.label}</label>
                     ${f.isTextarea ? 
-                        `<textarea data-key="${f.key}" placeholder="${f.placeholder}" rows="3" class="form-input">${f.val}</textarea>` :
+                        `<textarea data-key="${f.key}" ${f.detailEditor ? 'data-detail-editor="true"' : ''} placeholder="${f.placeholder}" rows="5" class="form-input ${f.detailEditor ? 'details-editor' : ''}">${f.val}</textarea>` :
                         `<input type="text" data-key="${f.key}" placeholder="${f.placeholder}" value="${f.val}" class="form-input">`
                     }
                 </div>
@@ -545,6 +589,18 @@
         }
 
         // 6. 事件处理与数据同步
+        function formatDetailsForTextarea(details) {
+            if (!Array.isArray(details) || details.length === 0) return '· ';
+            return details.map(item => `· ${item || ''}`.trimEnd()).join('\n');
+        }
+
+        function parseDetailsFromTextarea(text) {
+            return String(text || '')
+                .split('\n')
+                .map(line => line.replace(/^\s*(?:[·•*\-]|\d+[\.、])\s*/, '').trim())
+                .filter(Boolean);
+        }
+
         function syncDataFromElement(el) {
             const key = el.dataset.key;
             if (!key) return;
@@ -576,7 +632,7 @@
 
             // 处理数组格式的字符串转换 (移动端textarea)
             if (key.includes('details') && el.tagName === "TEXTAREA") {
-                obj[lastKey] = value.split('\n').filter(s => s.trim());
+                obj[lastKey] = parseDetailsFromTextarea(value);
             } else {
                 obj[lastKey] = value;
             }
@@ -606,6 +662,28 @@
             }
         });
 
+        document.addEventListener('focusin', (e) => {
+            const el = e.target;
+            if (el.tagName === 'TEXTAREA' && el.dataset.detailEditor === 'true' && !el.value.trim()) {
+                el.value = '· ';
+                el.selectionStart = el.selectionEnd = el.value.length;
+                syncDataFromElement(el);
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            const el = e.target;
+            if (el.tagName === 'TEXTAREA' && el.dataset.detailEditor === 'true' && e.key === 'Enter' && !e.isComposing) {
+                e.preventDefault();
+                const start = el.selectionStart;
+                const end = el.selectionEnd;
+                const insertText = '\n· ';
+                el.value = el.value.slice(0, start) + insertText + el.value.slice(end);
+                el.selectionStart = el.selectionEnd = start + insertText.length;
+                syncDataFromElement(el);
+            }
+        });
+
         document.addEventListener('blur', (e) => {
             if (e.target.dataset.key) {
                 // 桌面端contenteditable失焦时保存
@@ -616,6 +694,12 @@
         }, true);
 
         // 7. 操作函数
+        function toggleDesktopDetailEdit(section, index) {
+            if (!desktopDetailEditState[section]) return;
+            desktopDetailEditState[section][index] = !desktopDetailEditState[section][index];
+            renderDesktop();
+        }
+
         function addSectionItem(section) {
             const templates = {
                 education: { school: "新学校", major: "专业/学历", date: "时间范围" },
@@ -630,9 +714,38 @@
             renderMobileForms();
         }
 
+        function addDetailItem(section, itemIndex) {
+            if (!Array.isArray(resumeData[section]) || !resumeData[section][itemIndex]) return;
+            if (!Array.isArray(resumeData[section][itemIndex].details)) {
+                resumeData[section][itemIndex].details = [];
+            }
+            resumeData[section][itemIndex].details.push('新增描述');
+            saveData();
+            renderDesktop();
+            renderMobileForms();
+        }
+
+        function removeDetailItem(section, itemIndex, detailIndex) {
+            const details = resumeData?.[section]?.[itemIndex]?.details;
+            if (!Array.isArray(details)) return;
+            details.splice(detailIndex, 1);
+            saveData();
+            renderDesktop();
+            renderMobileForms();
+        }
+
         function removeItem(section, index) {
             if(confirm('确定要删除这一项吗？')) {
                 resumeData[section].splice(index, 1);
+                if (desktopDetailEditState[section]) {
+                    const nextState = {};
+                    Object.keys(desktopDetailEditState[section]).forEach(k => {
+                        const i = parseInt(k);
+                        if (i < index) nextState[i] = desktopDetailEditState[section][k];
+                        if (i > index) nextState[i - 1] = desktopDetailEditState[section][k];
+                    });
+                    desktopDetailEditState[section] = nextState;
+                }
                 saveData();
                 renderDesktop();
                 renderMobileForms();
@@ -644,6 +757,12 @@
             const newIndex = index + direction;
             if (newIndex >= 0 && newIndex < list.length) {
                 [list[index], list[newIndex]] = [list[newIndex], list[index]];
+                if (desktopDetailEditState[section]) {
+                    const oldA = desktopDetailEditState[section][index];
+                    const oldB = desktopDetailEditState[section][newIndex];
+                    desktopDetailEditState[section][index] = oldB;
+                    desktopDetailEditState[section][newIndex] = oldA;
+                }
                 saveData();
                 renderDesktop();
                 renderMobileForms();
@@ -731,7 +850,7 @@
             Object.assign(clone.style, {
                 transform: 'none',
                 margin: '0',
-                padding: '20mm', // 保持内部边距
+                padding: '12mm', // 保持内部边距
                 boxShadow: 'none',
                 width: a4WidthPx + 'px',
                 minHeight: '297mm',
