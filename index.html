@@ -54,7 +54,7 @@
         .resume-container {
             width: 210mm;
             min-height: 297mm;
-            padding: 12mm;
+            padding: 14mm;
             margin: 0 auto;
             background: white;
             box-shadow: 0 0 20px rgba(0,0,0,0.1);
@@ -84,62 +84,9 @@
         .editable:hover { outline: 1px dashed #3b82f6; cursor: text; }
         .editable:focus { outline: 2px solid #3b82f6; background: rgba(59, 130, 246, 0.05); }
         
-        /* 参考图片样式实现 */
         .resume-header {
             position: relative;
             margin-bottom: 2rem;
-        }
-        
-        .header-decoration {
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 45%;
-            height: 6px;
-            background: #000;
-        }
-
-        .header-decoration-print {
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 45%;
-            height: 6px;
-            background: #000;
-            -webkit-print-color-adjust: exact;
-        }
-
-        .section-header {
-            border-bottom: 1px solid #e5e5e5;
-            padding-bottom: 4px;
-            margin-bottom: 12px;
-            font-size: 14px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #000;
-        }
-
-        .item-title {
-            font-weight: 700;
-            font-size: 15px;
-            color: #000;
-        }
-        
-        .item-subtitle {
-            font-size: 13px;
-            color: #4a4a4a;
-        }
-
-        .item-meta {
-            font-size: 12px;
-            color: #6b7280;
-        }
-
-        .skills-text {
-            line-height: 1.6;
-            font-size: 13px;
-            color: #333;
         }
 
         /* 移除原有的装饰 */
@@ -170,20 +117,6 @@
             overflow-wrap: anywhere;
             word-break: break-word;
             line-height: 1.6;
-        }
-
-        .desktop-inline-btn {
-            font-size: 11px;
-            color: #2563eb;
-            background: #eff6ff;
-            border: 1px solid #dbeafe;
-            border-radius: 9999px;
-            padding: 2px 8px;
-            transition: all 0.2s;
-        }
-
-        .desktop-inline-btn:hover {
-            background: #dbeafe;
         }
         
         .mobile-editor {
@@ -284,42 +217,42 @@
 
                 <!-- 教育背景 -->
                 <section class="mb-8 relative group">
-                    <div class="flex justify-between items-center section-header">
+                    <div class="flex justify-between items-center border-b border-gray-200 pb-1 mb-3 text-sm font-bold uppercase tracking-wider text-black">
                         <span>教育背景</span>
-                        <button onclick="addSectionItem('education')" class="no-print opacity-0 group-hover:opacity-100 transition text-[10px] text-blue-500 uppercase tracking-widest"><i class="fas fa-plus"></i> Add</button>
+                        <button onclick="addSectionItem('education')" class="no-print opacity-0 group-hover:opacity-100 transition text-xs text-blue-500 uppercase tracking-widest"><i class="fas fa-plus"></i> Add</button>
                     </div>
                     <div id="container-education" class="space-y-4"></div>
                 </section>
 
                 <!-- 工作经历 -->
                 <section class="mb-8 relative group">
-                    <div class="flex justify-between items-center section-header">
+                    <div class="flex justify-between items-center border-b border-gray-200 pb-1 mb-3 text-sm font-bold uppercase tracking-wider text-black">
                         <span>工作经历</span>
-                        <button onclick="addSectionItem('work')" class="no-print opacity-0 group-hover:opacity-100 transition text-[10px] text-blue-500 uppercase tracking-widest"><i class="fas fa-plus"></i> Add</button>
+                        <button onclick="addSectionItem('work')" class="no-print opacity-0 group-hover:opacity-100 transition text-xs text-blue-500 uppercase tracking-widest"><i class="fas fa-plus"></i> Add</button>
                     </div>
                     <div id="container-work" class="space-y-6"></div>
                 </section>
 
                 <!-- 项目经验 (参考图中可能合并或作为 Experience) -->
                 <section class="mb-8 relative group">
-                    <div class="flex justify-between items-center section-header">
+                    <div class="flex justify-between items-center border-b border-gray-200 pb-1 mb-3 text-sm font-bold uppercase tracking-wider text-black">
                         <span>项目经验</span>
-                        <button onclick="addSectionItem('projects')" class="no-print opacity-0 group-hover:opacity-100 transition text-[10px] text-blue-500 uppercase tracking-widest"><i class="fas fa-plus"></i> Add</button>
+                        <button onclick="addSectionItem('projects')" class="no-print opacity-0 group-hover:opacity-100 transition text-xs text-blue-500 uppercase tracking-widest"><i class="fas fa-plus"></i> Add</button>
                     </div>
                     <div id="container-projects" class="space-y-6"></div>
                 </section>
 
                 <!-- 专业技能 -->
                 <section class="mb-8 relative group">
-                    <div class="section-header">专业技能</div>
-                    <div id="container-skills-text" class="skills-text editable outline-none" contenteditable="false">
+                    <div class="border-b border-gray-200 pb-1 mb-3 text-sm font-bold uppercase tracking-wider text-black">专业技能</div>
+                    <div id="container-skills-text" class="leading-relaxed text-sm text-gray-800 editable outline-none" contenteditable="false">
                         <!-- 这里通过 JS 特殊渲染成逗号分隔格式 -->
                     </div>
                 </section>
 
                 <!-- 自我评价 (可选) -->
                 <section class="relative group">
-                    <div class="section-header">自我评价</div>
+                    <div class="border-b border-gray-200 pb-1 mb-3 text-sm font-bold uppercase tracking-wider text-black">自我评价</div>
                     <p contenteditable="true" data-key="evaluation" class="editable text-sm text-gray-700 leading-relaxed outline-none"></p>
                 </section>
             </div>
@@ -399,10 +332,10 @@
                 <div class="group relative">
                     <div class="flex justify-between items-baseline">
                         <div class="flex items-baseline gap-2">
-                            <h3 contenteditable="true" data-key="education[${index}].school" class="editable item-title">${item.school}</h3>
-                            <p contenteditable="true" data-key="education[${index}].major" class="editable item-subtitle">${item.major}</p>
+                            <h3 contenteditable="true" data-key="education[${index}].school" class="editable font-bold text-base text-black">${item.school}</h3>
+                            <p contenteditable="true" data-key="education[${index}].major" class="editable text-sm text-gray-700">${item.major}</p>
                         </div>
-                        <span contenteditable="true" data-key="education[${index}].date" class="editable item-meta">${item.date}</span>
+                        <span contenteditable="true" data-key="education[${index}].date" class="editable text-sm text-gray-500">${item.date}</span>
                     </div>
                     <button onclick="removeItem('education', ${index})" class="no-print absolute -right-8 top-0 opacity-0 group-hover:opacity-100 text-red-300 hover:text-red-500 text-xs transition-opacity"><i class="fas fa-trash"></i></button>
                 </div>
@@ -413,20 +346,20 @@
                 <div class="group relative">
                     <div class="flex justify-between items-baseline mb-1">
                         <div class="flex items-baseline gap-2">
-                            <h3 contenteditable="true" data-key="work[${index}].company" class="editable item-title">${item.company}</h3>
+                            <h3 contenteditable="true" data-key="work[${index}].company" class="editable font-bold text-base text-black">${item.company}</h3>
                             <p contenteditable="true" data-key="work[${index}].role" class="editable italic text-sm text-gray-700 font-medium">${item.role}</p>
                         </div>
-                        <span contenteditable="true" data-key="work[${index}].date" class="editable item-meta">${item.date}</span>
+                        <span contenteditable="true" data-key="work[${index}].date" class="editable text-sm text-gray-500">${item.date}</span>
                     </div>
                     ${desktopDetailEditState.work[index] ? `
                         <div class="mt-2">
-                            <textarea id="desktop-details-work-${index}" data-key="work[${index}].details" data-detail-editor="true" rows="${Math.max((item.details || []).length + 1, 4)}" class="form-input details-editor w-full p-2 text-[13px] text-gray-700" placeholder="· 负责了...">${formatDetailsForTextarea(item.details || [])}</textarea>
+                            <textarea id="desktop-details-work-${index}" data-key="work[${index}].details" data-detail-editor="true" rows="${Math.max((item.details || []).length + 1, 4)}" class="form-input details-editor w-full p-2 text-sm text-gray-700" placeholder="· 负责了...">${formatDetailsForTextarea(item.details || [])}</textarea>
                             <div class="no-print mt-2">
-                                <button onclick="toggleDesktopDetailEdit('work', ${index})" class="desktop-inline-btn">完成</button>
+                                <button onclick="toggleDesktopDetailEdit('work', ${index})" class="text-xs text-blue-600 bg-blue-50 border border-blue-200 rounded-full px-2 py-0.5 transition-colors hover:bg-blue-100">完成</button>
                             </div>
                         </div>
                     ` : `
-                        <ul class="text-[13px] text-gray-700 space-y-1.5 ml-4 list-disc">
+                        <ul class="text-sm text-gray-700 space-y-1.5 ml-4 list-disc">
                             ${(item.details || []).map((d) => `
                                 <li>
                                     <span class="block">${d}</span>
@@ -434,7 +367,7 @@
                             `).join('')}
                         </ul>
                     `}
-                    ${desktopDetailEditState.work[index] ? '' : `<button onclick="toggleDesktopDetailEdit('work', ${index})" class="no-print absolute -right-2 top-1/2 opacity-0 group-hover:opacity-100 transition desktop-inline-btn">编辑描述</button>`}
+                    ${desktopDetailEditState.work[index] ? '' : `<button onclick="toggleDesktopDetailEdit('work', ${index})" class="no-print absolute -right-2 top-1/2 opacity-0 group-hover:opacity-100 transition text-xs text-blue-600 bg-blue-50 border border-blue-200 rounded-full px-2 py-0.5 hover:bg-blue-100">编辑描述</button>`}
                     <button onclick="removeItem('work', ${index})" class="no-print absolute -right-8 top-0 opacity-0 group-hover:opacity-100 text-red-300 hover:text-red-500 text-xs transition-opacity"><i class="fas fa-trash"></i></button>
                 </div>
             `);
@@ -443,19 +376,19 @@
             renderList('projects', 'container-projects', (item, index) => `
                 <div class="group relative">
                     <div class="flex justify-between items-baseline mb-0.5">
-                        <h3 contenteditable="true" data-key="projects[${index}].name" class="editable item-title">${item.name}</h3>
-                        <span contenteditable="true" data-key="projects[${index}].date" class="editable item-meta">${item.date}</span>
+                        <h3 contenteditable="true" data-key="projects[${index}].name" class="editable font-bold text-base text-black">${item.name}</h3>
+                        <span contenteditable="true" data-key="projects[${index}].date" class="editable text-sm text-gray-500">${item.date}</span>
                     </div>
-                    <p class="text-[12px] text-gray-500 mb-1.5 italic" contenteditable="true" data-key="projects[${index}].tech">${item.tech}</p>
+                    <p class="text-xs text-gray-500 mb-1.5 italic" contenteditable="true" data-key="projects[${index}].tech">${item.tech}</p>
                     ${desktopDetailEditState.projects[index] ? `
                         <div class="mt-2">
-                            <textarea id="desktop-details-projects-${index}" data-key="projects[${index}].details" data-detail-editor="true" rows="${Math.max((item.details || []).length + 1, 4)}" class="form-input details-editor w-full p-2 text-[13px] text-gray-700" placeholder="· 实现了...">${formatDetailsForTextarea(item.details || [])}</textarea>
+                            <textarea id="desktop-details-projects-${index}" data-key="projects[${index}].details" data-detail-editor="true" rows="${Math.max((item.details || []).length + 1, 4)}" class="form-input details-editor w-full p-2 text-sm text-gray-700" placeholder="· 实现了...">${formatDetailsForTextarea(item.details || [])}</textarea>
                             <div class="no-print mt-2">
-                                <button onclick="toggleDesktopDetailEdit('projects', ${index})" class="desktop-inline-btn">完成</button>
+                                <button onclick="toggleDesktopDetailEdit('projects', ${index})" class="text-xs text-blue-600 bg-blue-50 border border-blue-200 rounded-full px-2 py-0.5 transition-colors hover:bg-blue-100">完成</button>
                             </div>
                         </div>
                     ` : `
-                        <ul class="text-[13px] text-gray-700 space-y-1.5 ml-4 list-disc">
+                        <ul class="text-sm text-gray-700 space-y-1.5 ml-4 list-disc">
                             ${(item.details || []).map((d) => `
                                 <li>
                                     <span class="block">${d}</span>
@@ -463,7 +396,7 @@
                             `).join('')}
                         </ul>
                     `}
-                    ${desktopDetailEditState.projects[index] ? '' : `<button onclick="toggleDesktopDetailEdit('projects', ${index})" class="no-print absolute -right-2 top-1/2 opacity-0 group-hover:opacity-100 transition desktop-inline-btn">编辑描述</button>`}
+                    ${desktopDetailEditState.projects[index] ? '' : `<button onclick="toggleDesktopDetailEdit('projects', ${index})" class="no-print absolute -right-2 top-1/2 opacity-0 group-hover:opacity-100 transition text-xs text-blue-600 bg-blue-50 border border-blue-200 rounded-full px-2 py-0.5 hover:bg-blue-100">编辑描述</button>`}
                     <button onclick="removeItem('projects', ${index})" class="no-print absolute -right-8 top-0 opacity-0 group-hover:opacity-100 text-red-300 hover:text-red-500 text-xs transition-opacity"><i class="fas fa-trash"></i></button>
                 </div>
             `);
@@ -527,7 +460,7 @@
                                 <div class="flex gap-1 shrink-0">
                                     <button onclick="moveItem('skills', ${i}, -1)" class="p-2 text-gray-400 hover:text-gray-600"><i class="fas fa-arrow-up"></i></button>
                                     <button onclick="moveItem('skills', ${i}, 1)" class="p-2 text-gray-400 hover:text-gray-600"><i class="fas fa-arrow-down"></i></button>
-                                    <button onclick="removeItem('skills', ${i})" class="text-red-400 p-2"><i class="fas fa-trash-alt text-[10px]"></i></button>
+                                    <button onclick="removeItem('skills', ${i})" class="text-red-400 p-2"><i class="fas fa-trash-alt text-xs"></i></button>
                                 </div>
                             </div>
                         `).join('')}
@@ -565,7 +498,7 @@
         function createMobileCard(title, fields, index, type) {
             const fieldsHtml = fields.map(f => `
                 <div class="mb-3">
-                    <label class="form-label text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1 block">${f.label}</label>
+                    <label class="form-label text-xs text-gray-400 font-bold uppercase tracking-wider mb-1 block">${f.label}</label>
                     ${f.isTextarea ? 
                         `<textarea data-key="${f.key}" ${f.detailEditor ? 'data-detail-editor="true"' : ''} placeholder="${f.placeholder}" rows="5" class="form-input ${f.detailEditor ? 'details-editor' : ''}">${f.val}</textarea>` :
                         `<input type="text" data-key="${f.key}" placeholder="${f.placeholder}" value="${f.val}" class="form-input">`
@@ -576,11 +509,11 @@
             return `
                 <div class="mobile-card">
                     <div class="flex justify-between items-center mb-4 border-b border-gray-100 pb-2">
-                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">${title} #${index + 1}</span>
+                        <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">${title} #${index + 1}</span>
                         <div class="flex items-center gap-1">
-                            <button onclick="moveItem('${type}', ${index}, -1)" class="p-2 text-gray-400 hover:text-gray-600" title="上移"><i class="fas fa-arrow-up text-[10px]"></i></button>
-                            <button onclick="moveItem('${type}', ${index}, 1)" class="p-2 text-gray-400 hover:text-gray-600" title="下移"><i class="fas fa-arrow-down text-[10px]"></i></button>
-                            <button onclick="removeItem('${type}', ${index})" class="p-2 text-red-300 hover:text-red-500 transition ml-1" title="删除"><i class="fas fa-trash-alt text-[10px]"></i></button>
+                            <button onclick="moveItem('${type}', ${index}, -1)" class="p-2 text-gray-400 hover:text-gray-600" title="上移"><i class="fas fa-arrow-up text-xs"></i></button>
+                            <button onclick="moveItem('${type}', ${index}, 1)" class="p-2 text-gray-400 hover:text-gray-600" title="下移"><i class="fas fa-arrow-down text-xs"></i></button>
+                            <button onclick="removeItem('${type}', ${index})" class="p-2 text-red-300 hover:text-red-500 transition ml-1" title="删除"><i class="fas fa-trash-alt text-xs"></i></button>
                         </div>
                     </div>
                     ${fieldsHtml}
@@ -850,7 +783,7 @@
             Object.assign(clone.style, {
                 transform: 'none',
                 margin: '0',
-                padding: '12mm', // 保持内部边距
+                padding: '14mm', // 保持内部边距
                 boxShadow: 'none',
                 width: a4WidthPx + 'px',
                 minHeight: '297mm',
